@@ -10,3 +10,6 @@
 
 ## 3. CI/CD GitHub Actions 与 Watchtower 自动部署约束
 - **GHCR 私有镜像拉取说明**：私有包在远端直接 `docker pull` 会报 `manifest unknown`。如需使用 Watchtower 自动化零感拉取，推荐将 GHCR Package 可见性设为 Public，或者在 Compose 中保留 `build: .` 兜底本地构建。
+
+## 4. UI/UX 图标与视觉审美约束
+- **严禁使用 Emoji/文字伪图标**：在按钮、操作菜单、状态提示面板与导航组件中，严禁直接使用文字/Emoji 字符 (如 🔍、🚀、🎉、✅、❌ 等) 作为图标。所有图标必须统一使用高质量、规范的 **SVG 矢量图形 (Lucide / Feather 风格)**，保持全站界面视觉体验的高高级与极客质感。

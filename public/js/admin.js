@@ -365,10 +365,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnCheckSystemUpdate) {
     btnCheckSystemUpdate.addEventListener('click', () => {
-      console.log('触发检查更新按钮点击，正在发送 XHR/Fetch 请求...');
       btnCheckSystemUpdate.disabled = true;
       btnCheckSystemUpdate.style.opacity = '0.75';
-      btnCheckSystemUpdate.innerHTML = '<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; vertical-align:middle; border-width:2px; margin-right:6px; border-top-color:#ffffff;"></span> 正在比对 GitHub 远端镜像版本...';
+      btnCheckSystemUpdate.innerHTML = '<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; vertical-align:middle; border-width:2px; margin-right:6px; border-top-color:#ffffff;"></span><span>正在比对 GitHub 远端镜像...</span>';
       showToast('正在检查远端最新 Docker 镜像...', 'info');
 
       if (updateStatusBox) {
@@ -376,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateStatusBox.style.background = 'rgba(99, 102, 241, 0.1)';
         updateStatusBox.style.border = '1px solid rgba(129, 140, 248, 0.3)';
         updateStatusBox.style.color = '#c7d2fe';
-        updateStatusBox.textContent = '⏳ 正在向远程镜像仓库查询最新 Tag 与 Commit 哈希...';
+        updateStatusBox.textContent = '正在向远程镜像仓库查询最新 Tag 与 Commit 哈希...';
       }
 
       fetch('/api/admin/system/check-update', {
@@ -395,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(data => {
         btnCheckSystemUpdate.disabled = false;
         btnCheckSystemUpdate.style.opacity = '1';
-        btnCheckSystemUpdate.innerHTML = '🔍 重新检查版本';
+        btnCheckSystemUpdate.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>重新检查版本</span>';
 
         if (data.hasUpdate) {
           showToast('检测到新版本，请确认是否升级！', 'success');
@@ -404,14 +403,17 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStatusBox.style.border = '1px solid rgba(52, 211, 153, 0.4)';
             updateStatusBox.style.color = '#6ee7b7';
             updateStatusBox.innerHTML = `
-              <strong>🎉 检测到最新镜像版本！</strong><br>
+              <div style="display:flex; align-items:center; gap:6px; font-weight:600; margin-bottom:4px;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span>检测到最新镜像版本！</span>
+              </div>
               • 远端 Commit: <code>${data.latestCommit}</code><br>
               • 提交说明: ${escapeHtml(data.commitMessage)}<br>
               • 对应时间: ${data.commitDate || '刚发布'}
             `;
           }
           if (btnTriggerSystemUpdate) {
-            btnTriggerSystemUpdate.style.display = 'block';
+            btnTriggerSystemUpdate.style.display = 'inline-flex';
           }
         } else {
           showToast('当前已是最新版本，无需更新！', 'info');
@@ -419,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStatusBox.style.background = 'rgba(148, 163, 184, 0.1)';
             updateStatusBox.style.border = '1px solid rgba(255, 255, 255, 0.1)';
             updateStatusBox.style.color = '#94a3b8';
-            updateStatusBox.innerHTML = `✅ <strong>已是最新版本 (${data.currentCommit})</strong><br>系统的运行镜像与 GitHub 仓库 100% 一致。`;
+            updateStatusBox.innerHTML = `<div style="display:flex; align-items:center; gap:6px; font-weight:600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg><span>已是最新版本 (${data.currentCommit})</span></div>系统的运行镜像与 GitHub 仓库 100% 一致。`;
           }
           if (btnTriggerSystemUpdate) {
             btnTriggerSystemUpdate.style.display = 'none';
@@ -429,14 +431,14 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(err => {
         btnCheckSystemUpdate.disabled = false;
         btnCheckSystemUpdate.style.opacity = '1';
-        btnCheckSystemUpdate.innerHTML = '🔍 重新检查版本';
+        btnCheckSystemUpdate.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg><span>重新检查版本</span>';
         console.error('检查版本异常:', err);
         showToast(err.message || '版本检查失败，请重试', 'error');
         if (updateStatusBox) {
           updateStatusBox.style.background = 'rgba(239, 68, 68, 0.15)';
           updateStatusBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
           updateStatusBox.style.color = '#fca5a5';
-          updateStatusBox.textContent = `❌ ${err.message || '连接服务器检查失败，请重新登录管理后台'}`;
+          updateStatusBox.innerHTML = `<div style="display:flex; align-items:center; gap:6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg><span>${escapeHtml(err.message || '连接服务器检查失败，请重新登录管理后台')}</span></div>`;
         }
       });
     });
@@ -447,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!confirm('确定要立即升级部署最新 Docker 镜像吗？升级过程中可能发生短暂重连。')) return;
 
       btnTriggerSystemUpdate.disabled = true;
-      btnTriggerSystemUpdate.textContent = '🚀 升级部署中，请稍候...';
+      btnTriggerSystemUpdate.innerHTML = '<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; vertical-align:middle; border-width:2px; margin-right:6px; border-top-color:#ffffff;"></span><span>升级部署中，请稍候...</span>';
       showToast('已向 Watchtower 下发强行升级指令...', 'info');
 
       fetch('/api/admin/system/update', {
@@ -462,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (updateStatusBox) {
           updateStatusBox.style.background = 'rgba(16, 185, 129, 0.2)';
           updateStatusBox.style.color = '#a7f3d0';
-          updateStatusBox.innerHTML = '✨ <strong>应用正在进行拉取并重启...</strong><br>请等待 5-10 秒后刷新页面查看全新版本！';
+          updateStatusBox.innerHTML = '<div style="display:flex; align-items:center; gap:6px; font-weight:600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg><span>应用正在进行拉取并重启...</span></div>请等待 5-10 秒后刷新页面查看全新版本！';
         }
       })
       .catch(err => {

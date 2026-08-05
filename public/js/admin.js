@@ -36,13 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const toast = document.getElementById('toast');
 
   // 自定义 Select 初始化
-  adminSelectTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    adminSelectWrapper.classList.toggle('open');
-  });
+  if (adminSelectTrigger) {
+    adminSelectTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (adminSelectWrapper) adminSelectWrapper.classList.toggle('open');
+    });
+  }
 
   document.addEventListener('click', () => {
-    adminSelectWrapper.classList.remove('open');
+    if (adminSelectWrapper) adminSelectWrapper.classList.remove('open');
   });
 
   // 1. 初始化检查登录状态
@@ -64,35 +66,39 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 管理员登录
-  adminLoginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const password = adminPasswordInput.value;
-    fetch('/api/admin/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        adminToken = data.token;
-        localStorage.setItem('chat_admin_token', adminToken);
-        adminPasswordInput.value = '';
-        showToast('管理员验证成功！', 'success');
-        showAdminPanel();
-      } else {
-        showToast(data.message || '密码错误', 'error');
-      }
+  if (adminLoginForm) {
+    adminLoginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const password = adminPasswordInput ? adminPasswordInput.value : '';
+      fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          adminToken = data.token;
+          localStorage.setItem('chat_admin_token', adminToken);
+          if (adminPasswordInput) adminPasswordInput.value = '';
+          showToast('管理员验证成功！', 'success');
+          showAdminPanel();
+        } else {
+          showToast(data.message || '密码错误', 'error');
+        }
+      });
     });
-  });
+  }
 
   // 安全退出登录
-  btnAdminLogout.addEventListener('click', () => {
-    adminToken = '';
-    localStorage.removeItem('chat_admin_token');
-    showToast('已退出管理员状态', 'info');
-    showAdminLogin();
-  });
+  if (btnAdminLogout) {
+    btnAdminLogout.addEventListener('click', () => {
+      adminToken = '';
+      localStorage.removeItem('chat_admin_token');
+      showToast('已退出管理员状态', 'info');
+      showAdminLogin();
+    });
+  }
 
   // 拉取管理员房间列表
   function fetchAdminRooms() {
@@ -359,8 +365,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnCheckSystemUpdate) {
     btnCheckSystemUpdate.addEventListener('click', () => {
+      console.log('触发检查更新按钮点击，正在发送 XHR/Fetch 请求...');
       btnCheckSystemUpdate.disabled = true;
-      btnCheckSystemUpdate.textContent = '🔍 正在比对 GitHub 远端镜像版本...';
+      btnCheckSystemUpdate.style.opacity = '0.75';
+      btnCheckSystemUpdate.innerHTML = '<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; vertical-align:middle; border-width:2px; margin-right:6px; border-top-color:#ffffff;"></span> 正在比对 GitHub 远端镜像版本...';
       showToast('正在检查远端最新 Docker 镜像...', 'info');
 
       if (updateStatusBox) {
@@ -386,7 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .then(data => {
         btnCheckSystemUpdate.disabled = false;
-        btnCheckSystemUpdate.textContent = '🔍 重新检查版本';
+        btnCheckSystemUpdate.style.opacity = '1';
+        btnCheckSystemUpdate.innerHTML = '🔍 重新检查版本';
 
         if (data.hasUpdate) {
           showToast('检测到新版本，请确认是否升级！', 'success');
@@ -419,7 +428,8 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch(err => {
         btnCheckSystemUpdate.disabled = false;
-        btnCheckSystemUpdate.textContent = '🔍 重新检查版本';
+        btnCheckSystemUpdate.style.opacity = '1';
+        btnCheckSystemUpdate.innerHTML = '🔍 重新检查版本';
         console.error('检查版本异常:', err);
         showToast(err.message || '版本检查失败，请重试', 'error');
         if (updateStatusBox) {

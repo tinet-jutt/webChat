@@ -464,19 +464,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       contentHtml = `
-        <div class="file-message-card">
-          <div class="file-icon-box ${iconClass}">${escapeHtml(ext)}</div>
-          <div class="file-meta-info">
-            <span class="file-name-title" title="${escapeAttribute(msg.fileName)}">${escapeHtml(msg.fileName)}</span>
-            <span class="file-size-subtitle">
-              ${formattedSize}
-              <span class="stream-tag">流式传输</span>
-            </span>
+        <div class="message-bubble" style="padding: 0; background: transparent; border: none; box-shadow: none;">
+          <div class="file-message-card">
+            <div class="file-icon-box ${iconClass}">${escapeHtml(ext)}</div>
+            <div class="file-meta-info">
+              <span class="file-name-title" title="${escapeAttribute(msg.fileName)}">${escapeHtml(msg.fileName)}</span>
+              <span class="file-size-subtitle">
+                ${formattedSize}
+                <span class="stream-tag">流式传输</span>
+              </span>
+            </div>
+            <a href="${downloadTarget}" class="btn-file-stream-download" download="${escapeAttribute(msg.fileName)}" target="_blank" title="流式断点下载">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              下载
+            </a>
           </div>
-          <a href="${downloadTarget}" class="btn-file-stream-download" download="${escapeAttribute(msg.fileName)}" target="_blank" title="流式断点下载">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            下载
-          </a>
+          <div class="bubble-footer" style="margin-top: 2px;">
+            <span>${timeStr}</span>
+          </div>
         </div>
       `;
     }

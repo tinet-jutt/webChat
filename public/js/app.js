@@ -1,4 +1,4 @@
-// H5 Web Chat 前端 用户体验 & 空房间无感知适配
+// H5 Web Chat 前端 用户体验、大文件分片上传与流式下载
 document.addEventListener('DOMContentLoaded', () => {
   const socket = io();
 
@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSendMsg = document.getElementById('btn-send-msg');
   const btnUploadTrigger = document.getElementById('btn-upload-trigger');
   const imgInput = document.getElementById('img-input');
+
+  const btnFileTrigger = document.getElementById('btn-file-trigger');
+  const fileInput = document.getElementById('file-input');
+
+  const uploadProgressCard = document.getElementById('upload-progress-card');
+  const progressFilename = document.getElementById('progress-filename');
+  const progressPercentText = document.getElementById('progress-percent-text');
+  const progressBarFill = document.getElementById('progress-bar-fill');
+  const progressStatusSub = document.getElementById('progress-status-sub');
 
   const headerSelectWrapper = document.getElementById('header-select-wrapper');
   const headerSelectTrigger = document.getElementById('header-select-trigger');
@@ -198,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
     joinModal.classList.add('active');
   });
 
-  // 普通用户点击在线人数查看成员列表
   btnShowOnlineUsers.addEventListener('click', () => {
     renderUserOnlineModalList();
     onlineUsersModal.classList.add('active');
@@ -348,7 +356,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 监听口令变更自动下线重置事件
   socket.on('room_code_changed', (data) => {
     currentUser = null;
     updateUserProfileUI();
@@ -439,6 +446,24 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
+    } else if (msg.type === 'file') {
+      const ext = getFileExtension(msg.fileName);
+      const formattedSize = formatBytes(msg.fileSize);
+      const downloadTarget = msg.downloadUrl || msg.fileUrl;
+
+      contentHtml = `
+        <div class="file-message-card">
+          <div class="file-icon-box">${escapeHtml(ext)}</div>
+          <div class="file-meta-info">
+            <span class="file-name-title" title="${escapeAttribute(msg.fileName)}">${escapeHtml(msg.fileName)}</span>
+            <span class="file-size-subtitle">${formattedSize} • 流式传输</span>
+          </div>
+          <a href="${downloadTarget}" class="btn-file-stream-download" download="${escapeAttribute(msg.fileName)}" target="_blank" title="流式断点下载">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            下载
+          </a>
+        </div>
+      `;
     }
 
     item.innerHTML = `
@@ -456,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
-  // 5. 发送文本与图片消息
+  // 5. 发送文本消息
   btnSendMsg.addEventListener('click', sendTextMessage);
   msgInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -481,6 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     msgInput.value = '';
   }
 
+  // 图片快捷上传
   btnUploadTrigger.addEventListener('click', () => {
     if (availableRooms.length === 0) {
       showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
@@ -523,7 +549,109 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // 6. 复制与下载交互
+  // 6. 大文件切片上传核心逻辑 (Chunked Resumable Upload)
+  btnFileTrigger.addEventListener('click', () => {
+    if (availableRooms.length === 0) {
+      showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
+      return;
+    }
+    if (!currentUser) {
+      showToast('请先选择房间并输入昵称加入聊天！', 'warning');
+      joinModal.classList.add('active');
+      return;
+    }
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      handleFileUploadWithChunks(file);
+    }
+  });
+
+  async function handleFileUploadWithChunks(file) {
+    const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB 每个切片
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    const fileHash = `${Date.now()}-${encodeURIComponent(file.name)}-${file.size}`;
+
+    // 显示进度 UI
+    progressFilename.textContent = file.name;
+    progressPercentText.textContent = '0%';
+    progressBarFill.style.width = '0%';
+    progressStatusSub.textContent = `准备上传 0/${totalChunks} 切片...`;
+    uploadProgressCard.classList.add('active');
+
+    try {
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(file.size, start + CHUNK_SIZE);
+        const chunk = file.slice(start, end);
+
+        const formData = new FormData();
+        formData.append('fileHash', fileHash);
+        formData.append('chunkIndex', i);
+        formData.append('totalChunks', totalChunks);
+        formData.append('fileName', file.name);
+        formData.append('fileSize', file.size);
+        formData.append('chunk', chunk, `${i}`);
+
+        const res = await fetch('/api/upload/chunk', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+          throw new Error(data.message || `切片 ${i} 上传失败`);
+        }
+
+        // 更新进度条
+        const percent = Math.floor(((i + 1) / totalChunks) * 100);
+        progressPercentText.textContent = `${percent}%`;
+        progressBarFill.style.width = `${percent}%`;
+        progressStatusSub.textContent = `分片传输中 (${i + 1}/${totalChunks})...`;
+      }
+
+      // 所有切片上传完成，发送合并请求
+      progressStatusSub.textContent = '全量切片流式校验合并中...';
+      const mergeRes = await fetch('/api/upload/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileHash,
+          fileName: file.name,
+          totalChunks,
+          fileSize: file.size
+        })
+      });
+
+      const mergeData = await mergeRes.json();
+      if (mergeData.success) {
+        uploadProgressCard.classList.remove('active');
+        fileInput.value = '';
+        showToast('大文件切片发送成功！', 'success');
+
+        // 发送 Socket 广播
+        socket.emit('send_message', {
+          type: 'file',
+          fileUrl: mergeData.fileUrl,
+          downloadUrl: mergeData.downloadUrl,
+          fileName: mergeData.fileName,
+          fileSize: mergeData.fileSize
+        });
+      } else {
+        throw new Error(mergeData.message || '文件合并失败');
+      }
+    } catch (err) {
+      console.error('分片上传错误:', err);
+      uploadProgressCard.classList.remove('active');
+      fileInput.value = '';
+      showToast(err.message || '文件切片传输失败', 'error');
+    }
+  }
+
+  // 7. 辅助方法与点击响应
   messagesContainer.addEventListener('click', (e) => {
     const btnCopy = e.target.closest('.btn-copy-text');
     if (btnCopy) {
@@ -568,29 +696,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function downloadFile(url) {
-    showToast('图片准备下载...', 'info');
-    fetch(url)
-      .then(res => res.blob())
-      .then(blob => {
-        const blobUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = blobUrl;
-        const fileName = url.substring(url.lastIndexOf('/') + 1) || 'download-img.jpg';
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(blobUrl);
-        document.body.removeChild(a);
-        showToast('图片下载已开始！', 'success');
-      })
-      .catch(() => {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'chat-image.jpg';
-        a.target = '_blank';
-        a.click();
-      });
+    showToast('文件准备传输下载...', 'info');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = url.substring(url.lastIndexOf('/') + 1) || 'file';
+    a.target = '_blank';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   }
 
   function openImagePreview(url) {
@@ -630,6 +743,24 @@ document.addEventListener('DOMContentLoaded', () => {
     toastTimer = setTimeout(() => {
       toast.classList.remove('show');
     }, 2800);
+  }
+
+  function getFileExtension(filename) {
+    if (!filename) return 'FILE';
+    const parts = filename.split('.');
+    if (parts.length > 1) {
+      return parts.pop().substring(0, 4).toUpperCase();
+    }
+    return 'FILE';
+  }
+
+  function formatBytes(bytes, decimals = 1) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
 
   function formatTime(timestamp) {

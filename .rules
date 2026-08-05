@@ -1,8 +1,12 @@
-# Project Rules
+# 项目永久约束与经验规则 (.rules)
 
-## Project Rules
-- **推荐端口**：在 macOS 上默认使用 7001 端口，避免使用 7000 端口（会被系统 AirPlay ControlCenter 占用引发 EADDRINUSE 报错）。
-- **部署方式**：支持 Node.js 直接运行或 Docker / docker-compose 镜像启动。
+## 1. 端口与本地环境约束
+- **端口 conflict 说明**：macOS 系统级服务 `ControlCenter` (AirPlay 接收器) 默认占用了 `7000` 端口 (`afs3-fileserver`)。
+- **固定端口决策**：本地开发环境与容器端口统一固定映射使用 **`7001`** 端口，严禁试图在 `7000` 端口启动服务。
 
-## Learned Experience
-- **[2026-08-04] [端口占用与系统踩坑]**: macOS 系统的 ControlCenter 服务默认会占用 7000 端口 (AirPlay)，会导致 EADDRINUSE 报错。项目中优先推荐使用 7001 或其他未被占用的端口。
+## 2. 远程服务器 (VPS) 部署别名与 IP 约束
+- **VPS 2 (关键)**：用户的 `vps2` 设备专指 **`154.12.85.111`** (端口 22, root 用户)。在本地 Shell 中 alias 为 `vps2`，在 `~/.ssh/config` 中 Host 别名为 `new-vps`。
+- **部署踩坑教训**：部署生产环境时，务必准确识别 `vps2` 对应的 IP (`154.12.85.111`) 或别名 `new-vps`，绝不可误部署至 `myvps` (`207.57.146.226`) 或 `vps` (`117.55.236.41`) 等其他机器节点。
+
+## 3. CI/CD GitHub Actions 与 Watchtower 自动部署约束
+- **GHCR 私有镜像拉取说明**：私有包在远端直接 `docker pull` 会报 `manifest unknown`。如需使用 Watchtower 自动化零感拉取，推荐将 GHCR Package 可见性设为 Public，或者在 Compose 中保留 `build: .` 兜底本地构建。

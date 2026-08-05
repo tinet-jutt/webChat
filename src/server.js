@@ -199,6 +199,19 @@ io.on('connection', (socket) => {
         imageUrl: data.imageUrl,
         timestamp: Date.now()
       };
+    } else if (data.type === 'file' && data.fileUrl) {
+      msgObj = {
+        id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+        type: 'file',
+        sender: socket.userData.username,
+        senderId: socket.id,
+        avatarColor: socket.userData.avatarColor,
+        fileUrl: data.fileUrl,
+        downloadUrl: data.downloadUrl || data.fileUrl,
+        fileName: data.fileName || '未知文件',
+        fileSize: data.fileSize || 0,
+        timestamp: Date.now()
+      };
     }
 
     if (msgObj) {

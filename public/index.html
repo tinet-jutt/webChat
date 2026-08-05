@@ -45,17 +45,39 @@
 
     <!-- 底部输入框与工具栏 -->
     <footer class="chat-footer">
-      <button id="btn-upload-trigger" class="icon-btn" title="发送图片">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
-      </button>
-      <input type="file" id="img-input" accept="image/*">
-      
-      <input type="text" id="msg-input" class="input-box" placeholder="输入消息..." autocomplete="off">
-      
-      <button id="btn-send-msg" class="icon-btn send-btn" title="发送">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-      </button>
+        <!-- 工具栏按钮 -->
+        <div class="chat-tools">
+          <button class="btn-tool" id="btn-upload-trigger" title="发送图片">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          </button>
+          <button class="btn-tool" id="btn-file-trigger" title="发送文件 (支持大文件切片上传)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+          </button>
+          <input type="file" id="img-input" accept="image/*" style="display: none;">
+          <input type="file" id="file-input" style="display: none;">
+        </div>
+
+        <input type="text" class="msg-input" id="msg-input" placeholder="输入消息..." maxlength="500">
+
+        <button class="btn-send" id="btn-send-msg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
     </footer>
+  </div>
+
+  <!-- 大文件分片上传进度条 UI -->
+  <div id="upload-progress-card" class="upload-progress-card">
+    <div class="progress-header">
+      <div class="progress-title-wrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <span id="progress-filename">大文件传输中...</span>
+      </div>
+      <span id="progress-percent-text">0%</span>
+    </div>
+    <div class="progress-track">
+      <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+    </div>
+    <div class="progress-status-sub" id="progress-status-sub">正在准备分片上传...</div>
   </div>
 
   <!-- 1. 用户加入房间 Modal -->

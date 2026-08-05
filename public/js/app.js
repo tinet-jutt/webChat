@@ -526,7 +526,9 @@ document.addEventListener('DOMContentLoaded', () => {
     msgInput.value = '';
   }
 
-  // 图片快捷上传 (包含内嵌 Loading 占位态)
+  // 5. 统一智能媒体与文件选择器 (支持手机拍照、相册图片与通用大文件分片)
+  const mediaFileInput = document.getElementById('media-file-input');
+
   btnUploadTrigger.addEventListener('click', () => {
     if (availableRooms.length === 0) {
       showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
@@ -537,16 +539,23 @@ document.addEventListener('DOMContentLoaded', () => {
       joinModal.classList.add('active');
       return;
     }
-    imgInput.click();
+    mediaFileInput.click();
   });
 
-  imgInput.addEventListener('change', () => {
-    if (imgInput.files && imgInput.files[0]) {
-      const file = imgInput.files[0];
-      const draftId = 'draft-img-' + Date.now();
+  mediaFileInput.addEventListener('change', () => {
+    if (mediaFileInput.files && mediaFileInput.files[0]) {
+      const file = mediaFileInput.files[0];
+      handleSmartMediaUpload(file);
+    }
+  });
 
-      // 创建消息列表 Loading 占位
-      createLoadingMessage(draftId, '图片高清处理与传输中', file.name);
+  function handleSmartMediaUpload(file) {
+    const isStandardImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(file.name);
+
+    // 如果是小于 10MB 的标准图片，走图片快捷通道
+    if (isStandardImage && file.size <= 10 * 1024 * 1024) {
+      const draftId = 'draft-img-' + Date.now();
+      createLoadingMessage(draftId, '图片处理与传输中', file.name);
 
       const formData = new FormData();
       formData.append('image', file);
@@ -560,41 +569,26 @@ document.addEventListener('DOMContentLoaded', () => {
         removeLoadingMessage(draftId);
         if (data.success) {
           socket.emit('send_message', { type: 'image', imageUrl: data.imageUrl });
-          imgInput.value = '';
+          mediaFileInput.value = '';
           showToast('图片已成功发送！', 'success');
         } else {
-          showToast(data.message || '图片上传失败', 'error');
+          // 如果单张图片过大或发生格式兼容异常，自动平滑切片重试
+          console.warn('快捷图片上传失败，自动转切片通道:', data.message);
+          handleFileUploadWithChunks(file);
         }
       })
       .catch(err => {
         removeLoadingMessage(draftId);
-        console.error('上传出错:', err);
-        showToast('图片上传发生错误', 'error');
+        console.warn('图片快捷通道异常，转分片通道:', err);
+        handleFileUploadWithChunks(file);
       });
-    }
-  });
-
-  // 6. 大文件切片上传核心逻辑 (带有消息列表高质感 Loading 动画与进度联动)
-  btnFileTrigger.addEventListener('click', () => {
-    if (availableRooms.length === 0) {
-      showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
-      return;
-    }
-    if (!currentUser) {
-      showToast('请先选择房间并输入昵称加入聊天！', 'warning');
-      joinModal.classList.add('active');
-      return;
-    }
-    fileInput.click();
-  });
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files && fileInput.files[0]) {
-      const file = fileInput.files[0];
+    } else {
+      // 大图、手机高清原图或通用文件，走切片分块上传通道
       handleFileUploadWithChunks(file);
     }
-  });
+  }
 
+  // 6. 大文件切片上传核心逻辑 (带有消息列表高质感 Loading 动画与进度联动)
   async function handleFileUploadWithChunks(file) {
     const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB 每个切片
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
@@ -602,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const draftId = 'draft-file-' + Date.now();
 
     // 在消息区与浮动卡片同时开启精美 Loading
-    createLoadingMessage(draftId, '大文件切片传输中', `准备上传 (0/${totalChunks})`);
+    createLoadingMessage(draftId, '文件切片高速传输中', `准备上传 (0/${totalChunks})`);
 
     progressFilename.textContent = file.name;
     progressPercentText.textContent = '0%';
@@ -664,17 +658,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (mergeData.success) {
         uploadProgressCard.classList.remove('active');
-        fileInput.value = '';
-        showToast('大文件切片发送成功！', 'success');
+        mediaFileInput.value = '';
+        showToast('发送成功！', 'success');
 
-        // 发送 Socket 广播
-        socket.emit('send_message', {
-          type: 'file',
-          fileUrl: mergeData.fileUrl,
-          downloadUrl: mergeData.downloadUrl,
-          fileName: mergeData.fileName,
-          fileSize: mergeData.fileSize
-        });
+        const isImg = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(file.name);
+        if (isImg) {
+          socket.emit('send_message', { type: 'image', imageUrl: mergeData.fileUrl });
+        } else {
+          socket.emit('send_message', {
+            type: 'file',
+            fileUrl: mergeData.fileUrl,
+            downloadUrl: mergeData.downloadUrl,
+            fileName: mergeData.fileName,
+            fileSize: mergeData.fileSize
+          });
+        }
       } else {
         throw new Error(mergeData.message || '文件合并失败');
       }
@@ -682,8 +680,8 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('分片上传错误:', err);
       removeLoadingMessage(draftId);
       uploadProgressCard.classList.remove('active');
-      fileInput.value = '';
-      showToast(err.message || '文件切片传输失败', 'error');
+      mediaFileInput.value = '';
+      showToast(err.message || '传输失败', 'error');
     }
   }
 

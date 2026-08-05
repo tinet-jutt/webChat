@@ -389,7 +389,7 @@
           <button id="btn-admin-logout" class="btn-admin-danger-outline" style="margin-top: 4px;">安全退出管理员登录</button>
         </div>
 
-        <!-- 系统镜像升级与 DevOps 控制卡片 -->
+        <!-- 系统镜像升级与 DevOps 控制卡片 (两步法: 检查 ➔ 确认更新) -->
         <div class="dashboard-card" style="border-color: rgba(99, 102, 241, 0.35); background: rgba(30, 41, 59, 0.65);">
           <div class="card-title">
             <div class="card-title-left">
@@ -397,9 +397,19 @@
               <span style="color: #a5b4fc;">系统镜像与版本发布控制</span>
             </div>
           </div>
-          <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0 0 10px 0;">除定时自动巡检外，您可以随时点击下方按钮强行拉取 GitHub Packages 最新打包镜像并升级应用。</p>
-          <button id="btn-trigger-system-update" class="btn-admin-primary" style="background: linear-gradient(135deg, #4f46e5, #9333ea); border: 1px solid rgba(165, 180, 252, 0.4); box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
-            🚀 一键触发镜像拉取与应用部署更新
+          <p style="font-size: 12px; color: #94a3b8; line-height: 1.5; margin: 0 0 12px 0;">点击下方按钮比对远端 GitHub 镜像，若有新版本再二次确认拉取更新。</p>
+          
+          <!-- 第一步: 检查新版本 -->
+          <button id="btn-check-system-update" class="btn-admin-primary" style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(129, 140, 248, 0.4); color: #c7d2fe;">
+            🔍 检查是否有新版本
+          </button>
+
+          <!-- 动态提示区域 -->
+          <div id="update-status-box" style="display: none; margin-top: 12px; padding: 12px; border-radius: 12px; font-size: 12px; line-height: 1.5;"></div>
+
+          <!-- 第二步: 确认升级 (有新版本时显示) -->
+          <button id="btn-trigger-system-update" class="btn-admin-primary" style="display: none; margin-top: 10px; background: linear-gradient(135deg, #10b981, #059669); border: 1px solid rgba(52, 211, 153, 0.4); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);">
+            🚀 检测到新版本，确认立即升级部署
           </button>
         </div>
       </div>

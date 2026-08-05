@@ -335,6 +335,81 @@ router.post('/admin/change-password', adminAuth, (req, res) => {
   res.status(400).json({ success: false, message: '新密码无效' });
 });
 
+// 检查是否有新版本
+router.post('/admin/system/check-update', adminAuth, (req, res) => {
+  const https = require('https');
+  const currentCommit = (process.env.GIT_COMMIT || 'dev').trim();
+
+  const options = {
+    hostname: 'api.github.com',
+    path: '/repos/tinet-jutt/webChat/commits/main',
+    method: 'GET',
+    headers: {
+      'User-Agent': 'WebChat-Update-Checker-App'
+    },
+    timeout: 5000
+  };
+
+  const request = https.request(options, (response) => {
+    let rawData = '';
+    response.on('data', chunk => rawData += chunk);
+    response.on('end', () => {
+      try {
+        if (response.statusCode === 200) {
+          const commitData = JSON.parse(rawData);
+          const latestSha = commitData.sha || '';
+          const shortSha = latestSha.substring(0, 7);
+          const currentShortSha = currentCommit.substring(0, 7);
+          const commitMsg = commitData.commit ? commitData.commit.message : '仓库有新提交';
+          const commitDate = commitData.commit && commitData.commit.committer ? new Date(commitData.commit.committer.date).toLocaleString('zh-CN') : '';
+
+          // 对比当前提交与远程最新提交
+          const hasUpdate = (currentCommit !== 'dev' && latestSha && !latestSha.startsWith(currentCommit) && !currentCommit.startsWith(latestSha));
+
+          res.json({
+            success: true,
+            hasUpdate: hasUpdate,
+            currentCommit: currentShortSha,
+            latestCommit: shortSha,
+            commitMessage: commitMsg,
+            commitDate: commitDate,
+            message: hasUpdate 
+              ? `🎉 检测到 GitHub 仓库发布了新版本！[${shortSha}] (${commitMsg})` 
+              : `当前系统已是 GitHub 仓库最新版本 [${currentShortSha}]，无需重复升级。`
+          });
+        } else {
+          // GitHub API 限制时兜底
+          res.json({
+            success: true,
+            hasUpdate: true,
+            currentCommit: currentCommit.substring(0, 7),
+            latestCommit: 'latest',
+            message: '无法连通 GitHub API 动态比对，您可以直接触发拉取最新镜像强制升级！'
+          });
+        }
+      } catch (e) {
+        console.error('解析 GitHub commit 数据失败:', e);
+        res.json({
+          success: true,
+          hasUpdate: true,
+          message: '已就绪！点击下方按钮强行同步 GitHub 最新镜像。'
+        });
+      }
+    });
+  });
+
+  request.on('error', (err) => {
+    console.warn('检查新版本请求网络异常:', err.message);
+    res.json({
+      success: true,
+      hasUpdate: true,
+      message: '网络异常，您可以直接强行拉取远端最新镜像升级。'
+    });
+  });
+
+  request.end();
+});
+
 // 管理员主动触发 Watchtower 强行拉取最新镜像与重启更新
 router.post('/admin/system/update', adminAuth, (req, res) => {
   const http = require('http');

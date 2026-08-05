@@ -352,15 +352,81 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 主动触发 Watchtower 强行镜像拉取与部署更新
+  // 两步法系统更新逻辑 (1. 检查 ➔ 2. 确认更新)
+  const btnCheckSystemUpdate = document.getElementById('btn-check-system-update');
   const btnTriggerSystemUpdate = document.getElementById('btn-trigger-system-update');
+  const updateStatusBox = document.getElementById('update-status-box');
+
+  if (btnCheckSystemUpdate) {
+    btnCheckSystemUpdate.addEventListener('click', () => {
+      btnCheckSystemUpdate.disabled = true;
+      btnCheckSystemUpdate.textContent = '🔍 正在比对 GitHub 远端镜像版本...';
+      showToast('正在检查远端最新 Docker 镜像...', 'info');
+
+      if (updateStatusBox) {
+        updateStatusBox.style.display = 'block';
+        updateStatusBox.style.background = 'rgba(99, 102, 241, 0.1)';
+        updateStatusBox.style.border = '1px solid rgba(129, 140, 248, 0.3)';
+        updateStatusBox.style.color = '#c7d2fe';
+        updateStatusBox.textContent = '⏳ 正在向远程镜像仓库查询最新 Tag 与 Commit 哈希...';
+      }
+
+      fetch('/api/admin/system/check-update', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        btnCheckSystemUpdate.disabled = false;
+        btnCheckSystemUpdate.textContent = '🔍 重新检查版本';
+
+        if (data.hasUpdate) {
+          showToast('检测到新版本，请确认是否升级！', 'success');
+          if (updateStatusBox) {
+            updateStatusBox.style.background = 'rgba(16, 185, 129, 0.15)';
+            updateStatusBox.style.border = '1px solid rgba(52, 211, 153, 0.4)';
+            updateStatusBox.style.color = '#6ee7b7';
+            updateStatusBox.innerHTML = `
+              <strong>🎉 检测到最新镜像版本！</strong><br>
+              • 远端 Commit: <code>${data.latestCommit}</code><br>
+              • 提交说明: ${escapeHtml(data.commitMessage)}<br>
+              • 对应时间: ${data.commitDate || '刚发布'}
+            `;
+          }
+          if (btnTriggerSystemUpdate) {
+            btnTriggerSystemUpdate.style.display = 'block';
+          }
+        } else {
+          showToast('当前已是最新版本，无需更新！', 'info');
+          if (updateStatusBox) {
+            updateStatusBox.style.background = 'rgba(148, 163, 184, 0.1)';
+            updateStatusBox.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+            updateStatusBox.style.color = '#94a3b8';
+            updateStatusBox.innerHTML = `✅ <strong>已是最新版本 (${data.currentCommit})</strong><br>系统的运行镜像与 GitHub 仓库 100% 一致。`;
+          }
+          if (btnTriggerSystemUpdate) {
+            btnTriggerSystemUpdate.style.display = 'none';
+          }
+        }
+      })
+      .catch(err => {
+        btnCheckSystemUpdate.disabled = false;
+        btnCheckSystemUpdate.textContent = '🔍 重新检查版本';
+        console.error('检查版本异常:', err);
+        showToast('版本检查失败，请重试', 'error');
+      });
+    });
+  }
+
   if (btnTriggerSystemUpdate) {
     btnTriggerSystemUpdate.addEventListener('click', () => {
-      if (!confirm('确定要发起强行拉取最新 Docker 镜像并重启升级系统吗？')) return;
+      if (!confirm('确定要立即升级部署最新 Docker 镜像吗？升级过程中可能发生短暂重连。')) return;
 
       btnTriggerSystemUpdate.disabled = true;
-      btnTriggerSystemUpdate.textContent = '🚀 强行更新信号发送中...';
-      showToast('正在联系 Watchtower 拉取最新镜像...', 'info');
+      btnTriggerSystemUpdate.textContent = '🚀 升级部署中，请稍候...';
+      showToast('已向 Watchtower 下发强行升级指令...', 'info');
 
       fetch('/api/admin/system/update', {
         method: 'POST',
@@ -370,19 +436,16 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .then(res => res.json())
       .then(data => {
-        if (data.success) {
-          showToast(data.message, 'success');
-          btnTriggerSystemUpdate.textContent = '✅ 更新指令已生效 (自动升级中)';
-        } else {
-          showToast(data.message || '主动更新触发失败', 'error');
-          btnTriggerSystemUpdate.disabled = false;
-          btnTriggerSystemUpdate.textContent = '🚀 一键触发镜像拉取与应用部署更新';
+        showToast(data.message || '更新指令已发送', 'success');
+        if (updateStatusBox) {
+          updateStatusBox.style.background = 'rgba(16, 185, 129, 0.2)';
+          updateStatusBox.style.color = '#a7f3d0';
+          updateStatusBox.innerHTML = '✨ <strong>应用正在进行拉取并重启...</strong><br>请等待 5-10 秒后刷新页面查看全新版本！';
         }
       })
       .catch(err => {
-        console.error('主动更新出错:', err);
-        showToast('请求下发完成，系统正拉取最新镜像重启', 'info');
-        btnTriggerSystemUpdate.textContent = '✅ 指令已下发，请稍后刷新';
+        console.error('触发更新异常:', err);
+        showToast('触发指令已发出', 'info');
       });
     });
   }

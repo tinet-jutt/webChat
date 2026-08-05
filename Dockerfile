@@ -4,6 +4,10 @@ FROM node:18-alpine
 # 设置容器内工作目录
 WORKDIR /app
 
+# 注入 GitHub 构建 Commit
+ARG GIT_COMMIT=dev
+ENV GIT_COMMIT=$GIT_COMMIT
+
 # 复制依赖包配置
 COPY package*.json ./
 

@@ -14,6 +14,7 @@ services:
       - ADMIN_PASSWORD=admin123
     volumes:
       - ./uploads:/app/public/uploads
+      - ./data:/app/data
 
   # 2. Watchtower 自动监听与零停机镜像更新服务
   watchtower:

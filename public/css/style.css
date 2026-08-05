@@ -926,15 +926,36 @@ input:checked + .slider:before {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: rgba(30, 41, 59, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(30, 41, 59, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
   min-width: 250px;
-  max-width: 330px;
+  max-width: 320px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  margin: 4px 0;
+  box-sizing: border-box;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 自己发出的消息与他人发出的消息居侧间距自适应 */
+.message-item.self .file-message-card {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+.message-item.other .file-message-card {
+  margin-right: auto;
+  margin-left: 0;
+}
+
+/* 消息内容容器防贴边内边距保障 */
+.message-content {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+  padding: 0 4px;
 }
 
 .file-message-card:hover {
@@ -960,6 +981,7 @@ input:checked + .slider:before {
   letter-spacing: 0.5px;
   text-transform: uppercase;
   flex-shrink: 0;
+  margin-left: 2px;
 }
 
 .file-icon-box.type-video {

@@ -123,7 +123,7 @@ router.post('/upload/merge', async (req, res) => {
     fs.rmdirSync(chunkDir, { recursive: true });
 
     const fileUrl = `/uploads/${safeName}`;
-    const downloadUrl = `/api/download/${safeName}`;
+    const downloadUrl = `/api/download/${safeName}?originalName=${encodeURIComponent(fileName)}`;
 
     res.json({
       success: true,
@@ -140,9 +140,10 @@ router.post('/upload/merge', async (req, res) => {
   }
 });
 
-// 5. 大文件流式下载接口 (HTTP Range 206 断点续传)
+// 5. 大文件流式下载接口 (HTTP Range 206 断点续传，保持原始文件名)
 router.get('/download/:fileName', (req, res) => {
   const { fileName } = req.params;
+  const originalName = req.query.originalName || fileName;
   const filePath = path.join(uploadsDir, fileName);
 
   if (!fs.existsSync(filePath)) {
@@ -154,7 +155,7 @@ router.get('/download/:fileName', (req, res) => {
   const range = req.headers.range;
 
   res.setHeader('Accept-Ranges', 'bytes');
-  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(originalName)}"; filename*=UTF-8''${encodeURIComponent(originalName)}`);
 
   if (range) {
     const parts = range.replace(/bytes=/, "").split("-");

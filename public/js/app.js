@@ -715,11 +715,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.body.removeChild(textArea);
   }
 
-  function downloadFile(url) {
+  function downloadFile(url, fileName) {
     showToast('文件准备传输下载...', 'info');
     const a = document.createElement('a');
     a.href = url;
-    a.download = url.substring(url.lastIndexOf('/') + 1) || 'file';
+    const targetName = fileName || url.substring(url.lastIndexOf('/') + 1) || 'download-file';
+    a.download = targetName;
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();

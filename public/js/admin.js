@@ -1,4 +1,4 @@
-// 独立管理员控制台交互逻辑 (Admin Dashboard Logic with Empty Rooms Support)
+// 独立管理员控制台交互逻辑 (Admin Dashboard Logic with Empty Rooms Support & Pure SVG/Modal Design)
 document.addEventListener('DOMContentLoaded', () => {
   let adminToken = localStorage.getItem('chat_admin_token') || '';
   let adminSelectedRoomId = '';
@@ -55,13 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showAdminLogin() {
-    adminLoginSection.style.display = 'block';
-    adminPanelSection.style.display = 'none';
+    if (adminLoginSection) adminLoginSection.style.display = 'block';
+    if (adminPanelSection) adminPanelSection.style.display = 'none';
   }
 
   function showAdminPanel() {
-    adminLoginSection.style.display = 'none';
-    adminPanelSection.style.display = 'grid';
+    if (adminLoginSection) adminLoginSection.style.display = 'none';
+    if (adminPanelSection) adminPanelSection.style.display = 'grid';
     fetchAdminRooms();
   }
 
@@ -174,6 +174,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderAdminCustomSelect() {
+    if (!adminSelectedLabel || !adminSelectOptions || !toggleCodeRequired || !adminNewRoomCode) return;
+
     if (adminRoomsData.length === 0) {
       adminSelectedRoomId = '';
       adminSelectedLabel.textContent = '暂无可用房间 (请在右侧创建)';
@@ -191,19 +193,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const curRoom = adminRoomsData.find(r => r.id === adminSelectedRoomId) || adminRoomsData[0];
     if (curRoom) {
       adminSelectedRoomId = curRoom.id;
-      adminSelectedLabel.textContent = curRoom.name;
-      toggleCodeRequired.checked = curRoom.isCodeRequired;
+      adminSelectedLabel.textContent = `${curRoom.name} (${curRoom.id})`;
+      toggleCodeRequired.checked = !!curRoom.isCodeRequired;
       adminNewRoomCode.value = curRoom.roomCode || '';
     }
 
     let html = '';
-    const lockSvg = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
     adminRoomsData.forEach(r => {
       const isSelected = r.id === adminSelectedRoomId;
       html += `
         <div class="custom-select-option ${isSelected ? 'selected' : ''}" data-id="${r.id}">
-          <span>${escapeHtml(r.name)}</span>
-          ${r.isCodeRequired ? `<span class="badge-lock" style="display:inline-flex;align-items:center;gap:3px;">${lockSvg} 口令</span>` : ''}
+          <span>${escapeHtml(r.name)} (${escapeHtml(r.id)})</span>
+          ${r.isCodeRequired ? '<span style="font-size:11px; color:#f59e0b;">🔒</span>' : ''}
         </div>
       `;
     });
@@ -212,58 +213,55 @@ document.addEventListener('DOMContentLoaded', () => {
     adminSelectOptions.querySelectorAll('.custom-select-option').forEach(opt => {
       opt.addEventListener('click', (e) => {
         e.stopPropagation();
-        adminSelectWrapper.classList.remove('open');
-        const roomId = opt.getAttribute('data-id');
-        adminSelectedRoomId = roomId;
-        const targetRoom = adminRoomsData.find(r => r.id === roomId);
+        const id = opt.getAttribute('data-id');
+        const targetRoom = adminRoomsData.find(r => r.id === id);
         if (targetRoom) {
-          adminSelectedLabel.textContent = targetRoom.name;
-          toggleCodeRequired.checked = targetRoom.isCodeRequired;
-          adminNewRoomCode.value = targetRoom.roomCode || '';
-          fetchAdminRoomUsers(roomId);
+          adminSelectedRoomId = id;
+          renderAdminCustomSelect();
+          fetchAdminRoomUsers(id);
         }
+        if (adminSelectWrapper) adminSelectWrapper.classList.remove('open');
       });
     });
   }
 
-  // 管理员获取当前房间的在线人员
   function fetchAdminRoomUsers(roomId) {
     if (!roomId) {
       renderAdminUsersList([]);
       return;
     }
     fetch(`/api/admin/users/${roomId}`, {
-      headers: { 'Authorization': adminToken }
+      headers: { 'Authorization': `Bearer ${adminToken}` }
     })
     .then(res => res.json())
     .then(data => {
       if (data.success && Array.isArray(data.users)) {
         renderAdminUsersList(data.users);
+      } else {
+        renderAdminUsersList([]);
       }
     });
   }
 
-  // 纯粹渲染在线人员
   function renderAdminUsersList(users) {
-    adminOnlineUserCount.textContent = `${users.length} 人在线`;
+    if (!adminOnlineUsersList || !adminOnlineUserCount) return;
+
+    adminOnlineUserCount.textContent = users.length;
+
     if (users.length === 0) {
-      adminOnlineUsersList.innerHTML = `<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">${adminRoomsData.length === 0 ? '暂无可用房间' : '当前房间暂无在线成员'}</div>`;
+      adminOnlineUsersList.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">当前房间暂无在线成员</div>`;
       return;
     }
 
     let html = '';
     users.forEach(u => {
-      const avatarBg = u.avatarColor || 'linear-gradient(135deg, #6366f1, #4f46e5)';
-      const firstLetter = u.username ? u.username.charAt(0).toUpperCase() : '?';
       html += `
         <div class="admin-user-item">
           <div class="admin-user-info">
-            <div class="user-mini-avatar" style="background:${avatarBg}">${firstLetter}</div>
-            <span class="admin-user-name">${escapeHtml(u.username)}</span>
+            <div class="user-avatar" style="background: ${u.avatarColor || 'var(--primary)'}">${escapeHtml((u.username || '?').charAt(0).toUpperCase())}</div>
+            <span class="admin-username">${escapeHtml(u.username)}</span>
           </div>
-          <span style="font-size:11.5px; color:#4ade80; display:inline-flex; align-items:center; gap:4px;">
-            <span style="width:6px; height:6px; border-radius:50%; background:#4ade80;"></span> 在线
-          </span>
+          <span style="font-size: 11px; color: #10b981; background: rgba(16,185,129,0.1); padding: 2px 8px; border-radius: 10px;">在线</span>
         </div>
       `;
     });
@@ -272,78 +270,84 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 保存房间设置
-  btnSaveAdminConfig.addEventListener('click', () => {
-    if (adminRoomsData.length === 0) {
-      showToast('暂无可选房间，请先在右侧“创建新房间”！', 'warning');
-      return;
-    }
-    const targetRoom = adminRoomsData.find(r => r.id === adminSelectedRoomId);
-    if (!targetRoom) return;
-
-    const isCodeRequired = toggleCodeRequired.checked;
-    const roomCode = adminNewRoomCode.value.trim();
-
-    fetch('/api/admin/rooms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': adminToken
-      },
-      body: JSON.stringify({
-        id: targetRoom.id,
-        name: targetRoom.name,
-        isCodeRequired,
-        roomCode
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        showToast(data.message || '房间配置保存成功！', 'success');
-        fetchAdminRooms();
-      } else {
-        showToast(data.message || '保存失败', 'error');
+  if (btnSaveAdminConfig) {
+    btnSaveAdminConfig.addEventListener('click', () => {
+      if (adminRoomsData.length === 0) {
+        showToast('暂无可选房间，请先在右侧“创建新房间”！', 'warning');
+        return;
       }
+      const targetRoom = adminRoomsData.find(r => r.id === adminSelectedRoomId);
+      if (!targetRoom) return;
+
+      const isCodeRequired = toggleCodeRequired.checked;
+      const roomCode = adminNewRoomCode.value.trim();
+
+      fetch('/api/admin/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          id: targetRoom.id,
+          name: targetRoom.name,
+          isCodeRequired,
+          roomCode
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message || '房间配置保存成功！', 'success');
+          fetchAdminRooms();
+        } else {
+          showToast(data.message || '保存失败', 'error');
+        }
+      });
     });
-  });
+  }
 
   // 创建新房间
-  btnCreateRoom.addEventListener('click', () => {
-    const id = newRoomIdInput.value.trim();
-    const name = newRoomNameInput.value.trim();
-    const roomCode = newRoomCodeInput.value.trim();
+  if (btnCreateRoom) {
+    btnCreateRoom.addEventListener('click', () => {
+      const id = newRoomIdInput.value.trim();
+      const name = newRoomNameInput.value.trim();
+      const roomCode = newRoomCodeInput.value.trim();
 
-    if (!id || !name) {
-      showToast('请填写完整房间ID与名称', 'warning');
-      return;
-    }
-
-    fetch('/api/admin/rooms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': adminToken
-      },
-      body: JSON.stringify({
-        id,
-        name,
-        isCodeRequired: !!roomCode,
-        roomCode
-      })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        showToast(`房间【${name}】创建成功！`, 'success');
-        adminSelectedRoomId = id;
-        newRoomIdInput.value = '';
-        newRoomNameInput.value = '';
-        newRoomCodeInput.value = '';
-        fetchAdminRooms();
-      } else {
-        showToast(data.message || '创建房间失败', 'error');
+      if (!id || !name) {
+        showToast('请填写完整房间ID与名称', 'warning');
+        return;
       }
+
+      fetch('/api/admin/rooms', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({
+          id,
+          name,
+          isCodeRequired: !!roomCode,
+          roomCode
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast(`房间【${name}】创建成功！`, 'success');
+          adminSelectedRoomId = id;
+          newRoomIdInput.value = '';
+          newRoomNameInput.value = '';
+          newRoomCodeInput.value = '';
+          fetchAdminRooms();
+        } else {
+          showToast(data.message || '创建房间失败', 'error');
+        }
+      });
     });
+  }
+
   // 清空选中房间历史消息 (自定义 Glassmorphism 确认弹窗)
   if (btnClearChatHistory) {
     btnClearChatHistory.addEventListener('click', async () => {
@@ -366,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/api/admin/rooms/${adminSelectedRoomId}/clear`, {
           method: 'POST',
           headers: {
-            'Authorization': adminToken
+            'Authorization': `Bearer ${adminToken}`
           }
         })
         .then(res => res.json())
@@ -386,38 +390,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 修改密码
-  btnChangeAdminPass.addEventListener('click', () => {
-    const oldPassword = adminOldPass.value;
-    const newPassword = adminNewPass.value;
+  if (btnChangeAdminPass) {
+    btnChangeAdminPass.addEventListener('click', () => {
+      const oldPassword = adminOldPass.value;
+      const newPassword = adminNewPass.value;
 
-    if (!oldPassword || !newPassword) {
-      showToast('请输入原密码与新密码', 'warning');
-      return;
-    }
-
-    fetch('/api/admin/change-password', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': adminToken
-      },
-      body: JSON.stringify({ oldPassword, newPassword })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        showToast('管理员密码修改成功！', 'success');
-        adminOldPass.value = '';
-        adminNewPass.value = '';
-      } else {
-        showToast(data.message || '密码修改失败', 'error');
+      if (!oldPassword || !newPassword) {
+        showToast('请输入原密码与新密码', 'warning');
+        return;
       }
-    })
-    .catch(err => {
-      console.error('修改密码出错:', err);
-      showToast('修改密码失败', 'error');
+
+      fetch('/api/admin/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminToken}`
+        },
+        body: JSON.stringify({ oldPassword, newPassword })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast('管理员密码修改成功！', 'success');
+          adminOldPass.value = '';
+          adminNewPass.value = '';
+        } else {
+          showToast(data.message || '密码修改失败', 'error');
+        }
+      })
+      .catch(err => {
+        console.error('修改密码出错:', err);
+        showToast('修改密码失败', 'error');
+      });
     });
-  });
+  }
 
   // 两步法系统更新逻辑 (1. 检查 ➔ 2. 确认更新)
   const btnCheckSystemUpdate = document.getElementById('btn-check-system-update');
@@ -442,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch('/api/admin/system/check-update', {
         method: 'POST',
         headers: {
-          'Authorization': adminToken
+          'Authorization': `Bearer ${adminToken}`
         }
       })
       .then(res => {
@@ -524,7 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch('/api/admin/system/update', {
         method: 'POST',
         headers: {
-          'Authorization': adminToken
+          'Authorization': `Bearer ${adminToken}`
         }
       })
       .then(res => res.json())
@@ -601,24 +607,26 @@ document.addEventListener('DOMContentLoaded', () => {
   function showToast(message, type = 'info') {
     if (toastTimer) clearTimeout(toastTimer);
 
-    toast.className = 'toast-container show toast-' + type;
+    if (toast) {
+      toast.className = 'toast-container show toast-' + type;
 
-    let iconSvg = '';
-    if (type === 'success') {
-      iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-    } else if (type === 'error') {
-      iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
-    } else if (type === 'warning') {
-      iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 1 1.71 3h16.94a2 2 0 0 1 1.71-3L13.71 3.86a2 2 0 0 1-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="16"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
-    } else {
-      iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+      let iconSvg = '';
+      if (type === 'success') {
+        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      } else if (type === 'error') {
+        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+      } else if (type === 'warning') {
+        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 1 1.71 3h16.94a2 2 0 0 1 1.71-3L13.71 3.86a2 2 0 0 1-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="16"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+      } else {
+        iconSvg = `<svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+      }
+
+      toast.innerHTML = `${iconSvg}<span>${escapeHtml(message)}</span>`;
+
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2800);
     }
-
-    toast.innerHTML = `${iconSvg}<span>${escapeHtml(message)}</span>`;
-
-    toastTimer = setTimeout(() => {
-      toast.classList.remove('show');
-    }, 2800);
   }
 
   function escapeHtml(str) {

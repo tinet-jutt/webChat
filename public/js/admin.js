@@ -297,32 +297,46 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(data.message || '创建房间失败', 'error');
       }
     });
-  });
+  // 清空选中房间历史消息 (自定义 Glassmorphism 确认弹窗)
+  if (btnClearChatHistory) {
+    btnClearChatHistory.addEventListener('click', async () => {
+      if (!adminSelectedRoomId) {
+        showToast('请先选择要清空消息的房间', 'warning');
+        return;
+      }
+      const targetRoom = adminRoomsData.find(r => r.id === adminSelectedRoomId);
+      if (!targetRoom) return;
 
-  // 清空历史
-  btnClearChatHistory.addEventListener('click', () => {
-    if (adminRoomsData.length === 0) {
-      showToast('暂无可选房间', 'warning');
-      return;
-    }
-    const targetRoom = adminRoomsData.find(r => r.id === adminSelectedRoomId);
-    if (!targetRoom) return;
-
-    if (confirm(`确定要清空【${targetRoom.name}】的所有历史消息记录吗？`)) {
-      fetch(`/api/admin/rooms/${adminSelectedRoomId}/clear`, {
-        method: 'POST',
-        headers: {
-          'Authorization': adminToken
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          showToast(`【${targetRoom.name}】历史消息记录已成功清空！`, 'success');
-        }
+      const confirmed = await showConfirmDialog({
+        title: '危险操作：清空房间历史消息',
+        content: `确定要清空 【${targetRoom.name}】 的所有历史消息记录吗？该操作同时将物理删除磁盘存储的所有文件与图片资源！`,
+        confirmText: '确认清空消息与文件',
+        cancelText: '取消操作',
+        danger: true
       });
-    }
-  });
+
+      if (confirmed) {
+        fetch(`/api/admin/rooms/${adminSelectedRoomId}/clear`, {
+          method: 'POST',
+          headers: {
+            'Authorization': adminToken
+          }
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            showToast(data.message || `【${targetRoom.name}】历史消息已成功清空！`, 'success');
+          } else {
+            showToast(data.message || '清空历史失败', 'error');
+          }
+        })
+        .catch(err => {
+          console.error('清空历史出错:', err);
+          showToast('清空历史消息失败', 'error');
+        });
+      }
+    });
+  }
 
   // 修改密码
   btnChangeAdminPass.addEventListener('click', () => {
@@ -445,8 +459,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (btnTriggerSystemUpdate) {
-    btnTriggerSystemUpdate.addEventListener('click', () => {
-      if (!confirm('确定要立即升级部署最新 Docker 镜像吗？升级过程中可能发生短暂重连。')) return;
+    btnTriggerSystemUpdate.addEventListener('click', async () => {
+      const confirmed = await showConfirmDialog({
+        title: '系统版本升级确认',
+        content: '确定要立即升级部署最新 Docker 镜像吗？在镜像拉取与容器无感更替过程中，连接可能会发生 2-3 秒的短注重连。',
+        confirmText: '确认立即升级',
+        cancelText: '取消',
+        danger: false
+      });
+
+      if (!confirmed) return;
 
       btnTriggerSystemUpdate.disabled = true;
       btnTriggerSystemUpdate.innerHTML = '<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; vertical-align:middle; border-width:2px; margin-right:6px; border-top-color:#ffffff;"></span><span>升级部署中，请稍候...</span>';
@@ -471,6 +493,60 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('触发更新异常:', err);
         showToast('触发指令已发出', 'info');
       });
+    });
+  }
+
+  // 辅助：通用高颜值 Glassmorphism Confirm 确认弹窗 (取代原生 confirm)
+  function showConfirmDialog({ title = '操作确认', content = '确定要执行此操作吗？', confirmText = '确认', cancelText = '取消', danger = false }) {
+    return new Promise((resolve) => {
+      const confirmModal = document.getElementById('confirm-modal');
+      const confirmModalTitle = document.getElementById('confirm-modal-title');
+      const confirmModalContent = document.getElementById('confirm-modal-content');
+      const btnConfirmOk = document.getElementById('btn-confirm-ok');
+      const btnConfirmCancel = document.getElementById('btn-confirm-cancel');
+
+      if (!confirmModal) {
+        resolve(true);
+        return;
+      }
+
+      const iconSvg = danger 
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`;
+
+      confirmModalTitle.innerHTML = `${iconSvg}<span style="color: ${danger ? '#f87171' : '#f8fafc'};">${escapeHtml(title)}</span>`;
+      confirmModalContent.textContent = content;
+      btnConfirmCancel.textContent = cancelText;
+      btnConfirmOk.textContent = confirmText;
+
+      if (danger) {
+        btnConfirmOk.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+        btnConfirmOk.style.borderColor = 'rgba(248, 113, 113, 0.4)';
+      } else {
+        btnConfirmOk.style.background = 'var(--primary-gradient)';
+        btnConfirmOk.style.borderColor = 'rgba(129, 140, 248, 0.4)';
+      }
+
+      confirmModal.classList.add('active');
+
+      const cleanup = () => {
+        confirmModal.classList.remove('active');
+        btnConfirmOk.removeEventListener('click', onOk);
+        btnConfirmCancel.removeEventListener('click', onCancel);
+      };
+
+      const onOk = () => {
+        cleanup();
+        resolve(true);
+      };
+
+      const onCancel = () => {
+        cleanup();
+        resolve(false);
+      };
+
+      btnConfirmOk.addEventListener('click', onOk);
+      btnConfirmCancel.addEventListener('click', onCancel);
     });
   }
 

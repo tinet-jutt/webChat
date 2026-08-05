@@ -422,6 +422,24 @@
   <!-- Toast 轻提示 -->
   <div id="toast" class="toast-container">提示信息</div>
 
-  <script src="/js/admin.js?v=2.3.0"></script>
+  <!-- 高颜值 Glassmorphism 自定义 Confirm 弹窗 -->
+  <div id="confirm-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title" id="confirm-modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>操作确认</span>
+        </div>
+      </div>
+      <div id="confirm-modal-content" style="font-size: 13.5px; color: #cbd5e1; line-height: 1.6; word-break: break-word;">
+        确定要执行此操作吗？
+      </div>
+      <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <button id="btn-confirm-cancel" class="btn-admin-danger-outline" style="border-color: rgba(255, 255, 255, 0.15); color: #94a3b8; width: auto; padding: 8px 18px;">取消</button>
+        <button id="btn-confirm-ok" class="btn-admin-primary" style="width: auto; padding: 8px 22px;">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/admin.js?v=2.4.0"></script>
 </body>
 </html>

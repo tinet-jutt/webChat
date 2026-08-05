@@ -451,12 +451,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const formattedSize = formatBytes(msg.fileSize);
       const downloadTarget = msg.downloadUrl || msg.fileUrl;
 
+      let iconClass = '';
+      const upperExt = ext.toUpperCase();
+      if (['MP4', 'MKV', 'MOV', 'AVI', 'WEBM'].includes(upperExt)) {
+        iconClass = 'type-video';
+      } else if (['MP3', 'WAV', 'FLAC', 'AAC', 'M4A'].includes(upperExt)) {
+        iconClass = 'type-audio';
+      } else if (['ZIP', 'RAR', '7Z', 'TAR', 'GZ'].includes(upperExt)) {
+        iconClass = 'type-archive';
+      } else if (['PDF', 'DOC', 'DOCX', 'TXT', 'XLS', 'PPT'].includes(upperExt)) {
+        iconClass = 'type-doc';
+      }
+
       contentHtml = `
         <div class="file-message-card">
-          <div class="file-icon-box">${escapeHtml(ext)}</div>
+          <div class="file-icon-box ${iconClass}">${escapeHtml(ext)}</div>
           <div class="file-meta-info">
             <span class="file-name-title" title="${escapeAttribute(msg.fileName)}">${escapeHtml(msg.fileName)}</span>
-            <span class="file-size-subtitle">${formattedSize} • 流式传输</span>
+            <span class="file-size-subtitle">
+              ${formattedSize}
+              <span class="stream-tag">流式传输</span>
+            </span>
           </div>
           <a href="${downloadTarget}" class="btn-file-stream-download" download="${escapeAttribute(msg.fileName)}" target="_blank" title="流式断点下载">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>

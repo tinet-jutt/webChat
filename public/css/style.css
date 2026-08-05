@@ -920,47 +920,80 @@ input:checked + .slider:before {
   color: var(--text-muted);
 }
 
-/* 文件消息卡片 */
+/* 文件消息卡片高质感 UI 升级 */
 .file-message-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  min-width: 230px;
-  max-width: 320px;
+  padding: 12px 14px;
+  background: rgba(30, 41, 59, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  min-width: 250px;
+  max-width: 330px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.file-message-card:hover {
+  border-color: rgba(129, 140, 248, 0.4);
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 多彩渐变扩展名 Icon 盒 */
 .file-icon-box {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(129, 140, 248, 0.1));
-  border: 1px solid rgba(129, 140, 248, 0.3);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #a5b4fc;
+  color: #ffffff;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
   flex-shrink: 0;
+}
+
+.file-icon-box.type-video {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.35);
+}
+
+.file-icon-box.type-audio {
+  background: linear-gradient(135deg, #f59e0b, #ec4899);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+}
+
+.file-icon-box.type-archive {
+  background: linear-gradient(135deg, #eab308, #ef4444);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+}
+
+.file-icon-box.type-doc {
+  background: linear-gradient(135deg, #3b82f6, #06b6d4);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .file-meta-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   overflow: hidden;
 }
 
 .file-name-title {
   font-size: 13.5px;
-  font-weight: 500;
-  color: #f1f5f9;
+  font-weight: 600;
+  color: #f8fafc;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -968,30 +1001,46 @@ input:checked + .slider:before {
 
 .file-size-subtitle {
   font-size: 11px;
-  color: var(--text-muted);
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
+.stream-tag {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(129, 140, 248, 0.15);
+  color: #818cf8;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* 高光按钮 */
 .btn-file-stream-download {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(129, 140, 248, 0.4);
-  border-radius: 8px;
-  color: #c7d2fe;
-  font-size: 11.5px;
-  font-weight: 500;
+  gap: 6px;
+  padding: 7px 12px;
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  border: none;
+  border-radius: 9px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
 
 .btn-file-stream-download:hover {
-  background: rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
   color: #fff;
-  border-color: #818cf8;
 }
 
 .toast-container.show {

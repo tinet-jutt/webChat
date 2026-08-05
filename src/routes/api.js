@@ -188,8 +188,10 @@ router.get('/download/:fileName', (req, res) => {
 
 // --- 管理员中间件 ---
 function adminAuth(req, res, next) {
-  const token = req.headers['authorization'];
-  if (token && token === `Bearer-${config.adminPassword}`) {
+  let token = req.headers['authorization'] || '';
+  token = token.replace(/^Bearer\s+/, '').trim();
+
+  if (token === `Bearer-${config.adminPassword}` || token === config.adminPassword) {
     return next();
   }
   return res.status(401).json({ success: false, message: '管理员未鉴权或登录已失效' });

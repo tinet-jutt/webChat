@@ -382,7 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch('/api/admin/system/check-update', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Authorization': adminToken
         }
       })
       .then(res => {
@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
       fetch('/api/admin/system/update', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${adminToken}`
+          'Authorization': adminToken
         }
       })
       .then(res => res.json())

@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let adminToken = localStorage.getItem('chat_admin_token') || '';
   let adminSelectedRoomId = '';
   let adminRoomsData = [];
+  let toastTimer = null;
 
   const adminLoginSection = document.getElementById('admin-login-section');
   const adminPanelSection = document.getElementById('admin-panel-section');
@@ -351,7 +352,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Toast
-  let toastTimer = null;
   function showToast(message, type = 'info') {
     if (toastTimer) clearTimeout(toastTimer);
 

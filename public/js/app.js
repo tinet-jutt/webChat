@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let availableRooms = [];
   let currentOnlineUsers = [];
   let currentPreviewUrl = '';
+  let toastTimer = null;
 
   const lockBadge = document.getElementById('lock-badge');
   const lockStatusText = document.getElementById('lock-status-text');
@@ -801,7 +802,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 8. Toast
-  let toastTimer = null;
   function showToast(message, type = 'info') {
     if (toastTimer) clearTimeout(toastTimer);
 

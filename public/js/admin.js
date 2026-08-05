@@ -65,29 +65,64 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchAdminRooms();
   }
 
-  // 管理员登录
-  if (adminLoginForm) {
-    adminLoginForm.addEventListener('submit', (e) => {
+  // 核心管理员登录处理 (双重阻断 HTML 原生页面跳转刷新)
+  const btnAdminLoginSubmit = document.getElementById('btn-admin-login-submit');
+
+  function doAdminLogin(e) {
+    if (e) {
       e.preventDefault();
-      const password = adminPasswordInput ? adminPasswordInput.value : '';
-      fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          adminToken = data.token;
-          localStorage.setItem('chat_admin_token', adminToken);
-          if (adminPasswordInput) adminPasswordInput.value = '';
-          showToast('管理员验证成功！', 'success');
-          showAdminPanel();
-        } else {
-          showToast(data.message || '密码错误', 'error');
-        }
-      });
+      e.stopPropagation();
+    }
+
+    const password = adminPasswordInput ? adminPasswordInput.value.trim() : '';
+    if (!password) {
+      showToast('请输入管理员密码', 'warning');
+      return false;
+    }
+
+    if (btnAdminLoginSubmit) {
+      btnAdminLoginSubmit.disabled = true;
+      btnAdminLoginSubmit.innerHTML = '<span class="loading-spinner" style="display:inline-block; width:14px; height:14px; vertical-align:middle; border-width:2px; margin-right:6px; border-top-color:#ffffff;"></span><span>身份验证中...</span>';
+    }
+
+    fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (btnAdminLoginSubmit) {
+        btnAdminLoginSubmit.disabled = false;
+        btnAdminLoginSubmit.innerHTML = '验证登录';
+      }
+      if (data.success) {
+        adminToken = data.token;
+        localStorage.setItem('chat_admin_token', adminToken);
+        if (adminPasswordInput) adminPasswordInput.value = '';
+        showToast('管理员身份验证成功！', 'success');
+        showAdminPanel();
+      } else {
+        showToast(data.message || '密码验证失败', 'error');
+      }
+    })
+    .catch(err => {
+      if (btnAdminLoginSubmit) {
+        btnAdminLoginSubmit.disabled = false;
+        btnAdminLoginSubmit.innerHTML = '验证登录';
+      }
+      console.error('登录请求异常:', err);
+      showToast('登录请求发送失败，请重试', 'error');
     });
+
+    return false;
+  }
+
+  if (adminLoginForm) {
+    adminLoginForm.addEventListener('submit', doAdminLogin);
+  }
+  if (btnAdminLoginSubmit) {
+    btnAdminLoginSubmit.addEventListener('click', doAdminLogin);
   }
 
   // 安全退出登录

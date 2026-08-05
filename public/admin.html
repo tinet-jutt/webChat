@@ -273,12 +273,12 @@
         <h3 style="font-size: 18px; font-weight: 600; color: #f8fafc;">身份安全验证</h3>
         <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">请输入管理员密码解锁控制权限</p>
       </div>
-      <form id="admin-login-form">
+      <form id="admin-login-form" onsubmit="return false;">
         <div class="form-group">
           <label class="form-label">管理员密码</label>
           <input type="password" id="admin-password-input" class="form-input" placeholder="输入管理员密码" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn-admin-primary" style="margin-top: 16px;">验证登录</button>
+        <button type="submit" id="btn-admin-login-submit" class="btn-admin-primary" style="margin-top: 16px;">验证登录</button>
       </form>
     </div>
 
@@ -440,6 +440,6 @@
     </div>
   </div>
 
-  <script src="/js/admin.js?v=2.4.0"></script>
+  <script src="/js/admin.js?v=2.5.0"></script>
 </body>
 </html>

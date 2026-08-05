@@ -221,6 +221,7 @@ const PORT = process.env.PORT || 7001;
 server.listen(PORT, () => {
   console.log(`\n=================================`);
   console.log(`🚀 WebChat H5 多房间聊天服务器 (带防爆破保护) 已启动!`);
+  console.log(`✨ [Watchtower Verified] 自动部署更新已成功生效！`);
   console.log(`📍 访问地址: http://localhost:${PORT}`);
   console.log(`=================================\n`);
 });

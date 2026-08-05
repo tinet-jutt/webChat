@@ -1,0 +1,25 @@
+{
+  "name": "h5-web-chat",
+  "version": "1.0.0",
+  "description": "A modern H5 web chat application with admin room password control, text copy, image download, and Docker support.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "chat",
+    "h5",
+    "socket.io",
+    "express",
+    "docker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "socket.io": "^4.7.5"
+  }
+}

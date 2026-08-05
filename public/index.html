@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>H5 私密 Web 群聊</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 顶部 Header (隐藏管理员入口，右侧展示当前用户标识) -->
+    <header class="chat-header">
+      <!-- 1. 房间选择 -->
+      <div id="header-select-wrapper" class="custom-select-wrapper">
+        <div class="custom-select-trigger" id="header-select-trigger">
+          <svg class="room-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          <span class="trigger-label" id="header-selected-label">公共大厅</span>
+          <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        </div>
+        <div class="custom-select-options" id="header-select-options">
+        </div>
+      </div>
+
+      <!-- 2. 口令状态与在线人数 (点击可查看在线成员) -->
+      <div id="btn-show-online-users" class="header-status-group clickable-status" title="点击查看在线成员">
+        <span id="lock-badge" class="lock-badge unlocked">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          <span id="lock-status-text">无需口令</span>
+        </span>
+        <span id="online-count" class="online-count">0 人在线</span>
+      </div>
+
+      <!-- 3. 右侧显示当前登录用户的【用户名与头像】 -->
+      <div id="user-profile-badge" class="user-profile-badge" title="点击切换昵称">
+        <div id="current-user-avatar" class="user-mini-avatar" style="background: var(--primary);">?</div>
+        <span id="current-user-name" class="profile-username">未登录</span>
+      </div>
+    </header>
+
+    <!-- 消息列表区域 -->
+    <main id="messages-container" class="messages-container">
+    </main>
+
+    <!-- 底部输入框与工具栏 -->
+    <footer class="chat-footer">
+      <button id="btn-upload-trigger" class="icon-btn" title="发送图片">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+      </button>
+      <input type="file" id="img-input" accept="image/*">
+      
+      <input type="text" id="msg-input" class="input-box" placeholder="输入消息..." autocomplete="off">
+      
+      <button id="btn-send-msg" class="icon-btn send-btn" title="发送">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </footer>
+  </div>
+
+  <!-- 1. 用户加入房间 Modal -->
+  <div id="join-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">进入聊天群</h3>
+        <button id="close-join-modal" class="close-btn">&times;</button>
+      </div>
+      <form id="join-form">
+        <div class="form-group">
+          <label class="form-label">选择要进入的房间</label>
+          <div id="join-select-wrapper" class="custom-select-wrapper full-width">
+            <div class="custom-select-trigger" id="join-select-trigger">
+              <svg class="room-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              <span class="trigger-label" id="join-selected-label">公共大厅</span>
+              <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+            <div class="custom-select-options" id="join-select-options">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px;">
+          <label class="form-label">你的用户名</label>
+          <input type="text" id="join-username" class="form-input" placeholder="请输入你的昵称" required maxlength="15">
+        </div>
+
+        <div id="room-code-group" class="form-group" style="display: none; margin-top: 12px;">
+          <label class="form-label">房间口令 (该房间受保密保护)</label>
+          <input type="password" id="join-room-code" class="form-input" placeholder="请输入该房间口令">
+        </div>
+
+        <button type="submit" class="btn-primary" style="margin-top: 20px;">进入房间</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2. 普通用户查看在线成员 Modal -->
+  <div id="online-users-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display:flex; align-items:center; gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          当前在线成员
+        </h3>
+        <button id="close-online-users-modal" class="close-btn">&times;</button>
+      </div>
+
+      <div id="user-online-list" class="admin-users-list" style="max-height: 260px;">
+        <!-- 动态渲染在线用户列表 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. 全屏图片预览 Modal -->
+  <div id="image-modal" class="image-preview-modal">
+    <img id="preview-img-element" class="preview-img" src="" alt="预览大图">
+    <div class="preview-actions">
+      <button id="btn-download-image" class="preview-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        下载图片
+      </button>
+      <button id="btn-close-image-modal" class="preview-btn">关闭</button>
+    </div>
+  </div>
+
+  <!-- Toast 轻提示 -->
+  <div id="toast" class="toast-container">提示信息</div>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

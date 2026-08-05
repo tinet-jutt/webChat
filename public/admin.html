@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>系统管理员后台 - H5 WebChat</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* 全局滚动与背景 */
+    html, body {
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      height: auto !important;
+      min-height: 100vh;
+      background: #090d16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    /* 页面中心容器 */
+    .admin-dashboard-layout {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 20px 14px 40px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 顶栏 Header 响应式高颜值优化 */
+    .admin-dashboard-header {
+      background: rgba(20, 29, 47, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .admin-brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+
+    .admin-brand-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .admin-brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f8fafc;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .admin-brand-sub {
+      font-size: 11.5px;
+      color: #94a3b8;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .btn-back-chat {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #f8fafc;
+      padding: 8px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
+    }
+
+    .btn-back-chat:hover, .btn-back-chat:active {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    /* 登录卡片 */
+    .admin-center-login {
+      max-width: 400px;
+      margin: 40px auto 0 auto;
+      background: rgba(20, 29, 47, 0.9);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 28px 24px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    /* 统一的单列/双栏 Grid 容器 */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .dashboard-column {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .admin-dashboard-header {
+        padding: 12px 14px;
+      }
+      .admin-brand-title {
+        font-size: 16px;
+      }
+      .btn-back-chat {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+    }
+
+    /* 精美控制台卡片 (确保每个卡片底部必有间距) */
+    .dashboard-card {
+      background: rgba(20, 29, 47, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-title {
+      font-size: 15.5px;
+      font-weight: 600;
+      color: #f8fafc;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      padding-bottom: 10px;
+      margin-bottom: 2px;
+    }
+
+    .card-title-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title-icon {
+      color: #818cf8;
+    }
+
+    /* 按钮质感提升 */
+    .btn-admin-primary {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: #ffffff;
+      border: none;
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .btn-admin-primary:hover, .btn-admin-primary:active {
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+    }
+
+    .btn-admin-success {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-admin-success:hover, .btn-admin-success:active {
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+    }
+
+    .btn-admin-purple {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
+    }
+
+    .btn-admin-purple:hover, .btn-admin-purple:active {
+      box-shadow: 0 6px 18px rgba(139, 92, 246, 0.45);
+    }
+
+    .btn-admin-danger-outline {
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.28);
+      padding: 11px 16px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+
+    .btn-admin-danger-outline:hover, .btn-admin-danger-outline:active {
+      background: rgba(239, 68, 68, 0.85);
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="admin-dashboard-layout">
+    <!-- 顶栏 Header -->
+    <header class="admin-dashboard-header">
+      <div class="admin-brand">
+        <div class="admin-brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </div>
+        <div class="admin-brand-info">
+          <h1 class="admin-brand-title">系统管理控制台</h1>
+          <div class="admin-brand-sub">H5 WebChat 多房间与安全运维系统</div>
+        </div>
+      </div>
+      <a href="/" class="btn-back-chat">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>返回群聊大厅</span>
+      </a>
+    </header>
+
+    <!-- 1. 未登录状态：居中独立验证卡片 -->
+    <div id="admin-login-section" class="admin-center-login">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <h3 style="font-size: 18px; font-weight: 600; color: #f8fafc;">身份安全验证</h3>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px;">请输入管理员密码解锁控制权限</p>
+      </div>
+      <form id="admin-login-form">
+        <div class="form-group">
+          <label class="form-label">管理员密码</label>
+          <input type="password" id="admin-password-input" class="form-input" placeholder="输入管理员密码" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-admin-primary" style="margin-top: 16px;">验证登录</button>
+      </form>
+    </div>
+
+    <!-- 2. 已登录状态：大气 Grid 仪表盘控制面板 -->
+    <div id="admin-panel-section" class="dashboard-grid" style="display: none;">
+      
+      <!-- 左栏：房间口令管理 & 成员踢人 -->
+      <div class="dashboard-column">
+        <!-- 房间设置卡片 -->
+        <div class="dashboard-card">
+          <div class="card-title">
+            <div class="card-title-left">
+              <svg class="card-title-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              <span>房间口令与保密配置</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">选择要管理的房间</label>
+            <div id="admin-select-wrapper" class="custom-select-wrapper full-width">
+              <div class="custom-select-trigger" id="admin-select-trigger">
+                <svg class="room-icon-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l-.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                <span class="trigger-label" id="admin-selected-label">公共大厅</span>
+                <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+              <div class="custom-select-options" id="admin-select-options">
+              </div>
+            </div>
+          </div>
+
+          <div class="switch-group">
+            <span>开启该房间口令校验</span>
+            <label class="switch">
+              <input type="checkbox" id="toggle-code-required">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">设置/修改房间口令</label>
+            <input type="text" id="admin-new-room-code" class="form-input" placeholder="设置口令 (留空表示无需口令)">
+          </div>
+
+          <button id="btn-save-admin-config" class="btn-admin-primary">保存当前房间设置</button>
+          <button id="btn-clear-chat-history" class="btn-admin-danger-outline" style="margin-top: 2px;">清空当前房间历史记录</button>
+        </div>
+
+        <!-- 在线成员管理卡片 -->
+        <div class="dashboard-card">
+          <div class="card-title">
+            <div class="card-title-left">
+              <svg class="card-title-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+              <span>当前房间在线成员</span>
+            </div>
+            <span id="admin-online-user-count" style="font-size: 12.5px; color: #818cf8; font-weight: 600;">0 人</span>
+          </div>
+
+          <div id="admin-online-users-list" class="admin-users-list" style="max-height: 220px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- 右栏：创建新房间 & 账号安全管理 -->
+      <div class="dashboard-column">
+        <!-- 创建新房间卡片 -->
+        <div class="dashboard-card">
+          <div class="card-title">
+            <div class="card-title-left">
+              <svg class="card-title-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+              <span>创建新聊天房间</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">房间 ID (唯一标识)</label>
+            <input type="text" id="new-room-id" class="form-input" placeholder="例如: tech, vip2">
+          </div>
+          <div class="form-group">
+            <label class="form-label">房间显示名称</label>
+            <input type="text" id="new-room-name" class="form-input" placeholder="例如: 极客交流区">
+          </div>
+          <div class="form-group">
+            <label class="form-label">初始口令 (可选)</label>
+            <input type="text" id="new-room-code" class="form-input" placeholder="留空则公开无需口令">
+          </div>
+          <button id="btn-create-room" class="btn-admin-primary btn-admin-success">确认创建房间</button>
+        </div>
+
+        <!-- 管理员安全防护与密码修改卡片 -->
+        <div class="dashboard-card">
+          <div class="card-title">
+            <div class="card-title-left">
+              <svg class="card-title-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 2l-2 2m-2-2l2 2m7 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path><circle cx="7.5" cy="16.5" r="3.5"></circle></svg>
+              <span>管理员防伪密码设置</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">原管理员密码</label>
+            <input type="password" id="admin-old-pass" class="form-input" placeholder="输入原密码">
+          </div>
+          <div class="form-group">
+            <label class="form-label">新管理员密码</label>
+            <input type="password" id="admin-new-pass" class="form-input" placeholder="输入新密码">
+          </div>
+          <button id="btn-change-admin-pass" class="btn-admin-primary btn-admin-purple">保存新密码</button>
+          
+          <button id="btn-admin-logout" class="btn-admin-danger-outline" style="margin-top: 4px;">安全退出管理员登录</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast 轻提示 -->
+  <div id="toast" class="toast-container">提示信息</div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

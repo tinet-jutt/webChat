@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # 1. H5 WebChat 消息服务
+  webchat:
+    image: ghcr.io/tinet-jutt/webchat:latest
+    container_name: webchat-container
+    restart: always
+    ports:
+      - "7001:7001"
+    environment:
+      - PORT=7001
+      - ADMIN_PASSWORD=admin123
+    volumes:
+      - ./uploads:/app/public/uploads
+
+  # 2. Watchtower 自动监听与零停机镜像更新服务
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower-container
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    # 每 60 秒自动监听 GHCR 镜像更新并清理旧镜像
+    command: --interval 60 --cleanup webchat-container

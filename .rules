@@ -1,0 +1,8 @@
+# Project Rules
+
+## Project Rules
+- **推荐端口**：在 macOS 上默认使用 7001 端口，避免使用 7000 端口（会被系统 AirPlay ControlCenter 占用引发 EADDRINUSE 报错）。
+- **部署方式**：支持 Node.js 直接运行或 Docker / docker-compose 镜像启动。
+
+## Learned Experience
+- **[2026-08-04] [端口占用与系统踩坑]**: macOS 系统的 ControlCenter 服务默认会占用 7000 端口 (AirPlay)，会导致 EADDRINUSE 报错。项目中优先推荐使用 7001 或其他未被占用的端口。

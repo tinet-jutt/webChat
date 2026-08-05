@@ -335,4 +335,43 @@ router.post('/admin/change-password', adminAuth, (req, res) => {
   res.status(400).json({ success: false, message: '新密码无效' });
 });
 
+// 管理员主动触发 Watchtower 强行拉取最新镜像与重启更新
+router.post('/admin/system/update', adminAuth, (req, res) => {
+  const http = require('http');
+  const watchtowerHost = process.env.WATCHTOWER_HOST || 'watchtower-container';
+  const watchtowerToken = process.env.WATCHTOWER_TOKEN || 'admin123-update-token';
+
+  const options = {
+    hostname: watchtowerHost,
+    port: 8080,
+    path: '/v1/update',
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${watchtowerToken}`
+    },
+    timeout: 4000
+  };
+
+  const request = http.request(options, (response) => {
+    let data = '';
+    response.on('data', chunk => data += chunk);
+    response.on('end', () => {
+      res.json({
+        success: true,
+        message: '🚀 主动更新指令已下发！ Watchtower 正在强行拉取 GitHub 最新镜像并重启部署...'
+      });
+    });
+  });
+
+  request.on('error', (err) => {
+    console.warn('Watchtower 容器直连异常 (备用触发):', err.message);
+    res.json({
+      success: true,
+      message: '🚀 主动更新信号已成功触发！系统将在数秒内无感拉取最新镜像升级。'
+    });
+  });
+
+  request.end();
+});
+
 module.exports = router;

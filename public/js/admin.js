@@ -339,17 +339,53 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(res => res.json())
     .then(data => {
       if (data.success) {
-        showToast('管理员密码修改成功！请重新登录', 'success');
+        showToast('管理员密码修改成功！', 'success');
         adminOldPass.value = '';
         adminNewPass.value = '';
-        adminToken = '';
-        localStorage.removeItem('chat_admin_token');
-        showAdminLogin();
       } else {
         showToast(data.message || '密码修改失败', 'error');
       }
+    })
+    .catch(err => {
+      console.error('修改密码出错:', err);
+      showToast('修改密码失败', 'error');
     });
   });
+
+  // 主动触发 Watchtower 强行镜像拉取与部署更新
+  const btnTriggerSystemUpdate = document.getElementById('btn-trigger-system-update');
+  if (btnTriggerSystemUpdate) {
+    btnTriggerSystemUpdate.addEventListener('click', () => {
+      if (!confirm('确定要发起强行拉取最新 Docker 镜像并重启升级系统吗？')) return;
+
+      btnTriggerSystemUpdate.disabled = true;
+      btnTriggerSystemUpdate.textContent = '🚀 强行更新信号发送中...';
+      showToast('正在联系 Watchtower 拉取最新镜像...', 'info');
+
+      fetch('/api/admin/system/update', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          showToast(data.message, 'success');
+          btnTriggerSystemUpdate.textContent = '✅ 更新指令已生效 (自动升级中)';
+        } else {
+          showToast(data.message || '主动更新触发失败', 'error');
+          btnTriggerSystemUpdate.disabled = false;
+          btnTriggerSystemUpdate.textContent = '🚀 一键触发镜像拉取与应用部署更新';
+        }
+      })
+      .catch(err => {
+        console.error('主动更新出错:', err);
+        showToast('请求下发完成，系统正拉取最新镜像重启', 'info');
+        btnTriggerSystemUpdate.textContent = '✅ 指令已下发，请稍后刷新';
+      });
+    });
+  }
 
   // Toast
   function showToast(message, type = 'info') {

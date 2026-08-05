@@ -21,10 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const msgInput = document.getElementById('msg-input');
   const btnSendMsg = document.getElementById('btn-send-msg');
   const btnUploadTrigger = document.getElementById('btn-upload-trigger');
-  const imgInput = document.getElementById('img-input');
-
-  const btnFileTrigger = document.getElementById('btn-file-trigger');
-  const fileInput = document.getElementById('file-input');
+  const mediaFileInput = document.getElementById('media-file-input');
 
   const uploadProgressCard = document.getElementById('upload-progress-card');
   const progressFilename = document.getElementById('progress-filename');
@@ -528,27 +525,29 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // 5. 统一智能媒体与文件选择器 (支持手机拍照、相册图片与通用大文件分片)
-  const mediaFileInput = document.getElementById('media-file-input');
+  if (btnUploadTrigger) {
+    btnUploadTrigger.addEventListener('click', () => {
+      if (availableRooms.length === 0) {
+        showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
+        return;
+      }
+      if (!currentUser) {
+        showToast('请先选择房间并输入昵称加入聊天！', 'warning');
+        joinModal.classList.add('active');
+        return;
+      }
+      if (mediaFileInput) mediaFileInput.click();
+    });
+  }
 
-  btnUploadTrigger.addEventListener('click', () => {
-    if (availableRooms.length === 0) {
-      showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
-      return;
-    }
-    if (!currentUser) {
-      showToast('请先选择房间并输入昵称加入聊天！', 'warning');
-      joinModal.classList.add('active');
-      return;
-    }
-    mediaFileInput.click();
-  });
-
-  mediaFileInput.addEventListener('change', () => {
-    if (mediaFileInput.files && mediaFileInput.files[0]) {
-      const file = mediaFileInput.files[0];
-      handleSmartMediaUpload(file);
-    }
-  });
+  if (mediaFileInput) {
+    mediaFileInput.addEventListener('change', () => {
+      if (mediaFileInput.files && mediaFileInput.files[0]) {
+        const file = mediaFileInput.files[0];
+        handleSmartMediaUpload(file);
+      }
+    });
+  }
 
   function handleSmartMediaUpload(file) {
     const isStandardImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(file.name);

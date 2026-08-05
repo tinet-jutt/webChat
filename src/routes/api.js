@@ -189,24 +189,24 @@ router.get('/download/:fileName', (req, res) => {
 // --- 管理员中间件 ---
 function adminAuth(req, res, next) {
   let token = req.headers['authorization'] || '';
-  token = token.replace(/^Bearer\s+/, '').trim();
+  token = token.replace(/^Bearer\s+/, '').replace(/^Bearer-/, '').trim();
 
-  if (token === `Bearer-${config.adminPassword}` || token === config.adminPassword) {
+  if (token && token === config.adminPassword.trim()) {
     return next();
   }
-  return res.status(401).json({ success: false, message: '管理员未鉴权或登录已失效' });
+  return res.status(401).json({ success: false, message: '管理员身份凭证失效或密码已修改' });
 }
 
 // 管理员登录
 router.post('/admin/login', (req, res) => {
   const { password } = req.body;
-  if (password === config.adminPassword) {
+  if (password && password.trim() === config.adminPassword.trim()) {
     return res.json({
       success: true,
-      token: `Bearer-${config.adminPassword}`
+      token: password.trim()
     });
   }
-  res.status(401).json({ success: false, message: '管理员密码错误' });
+  res.status(401).json({ success: false, message: '管理员密码输入错误' });
 });
 
 // 获取管理端房间列表

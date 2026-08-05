@@ -138,9 +138,14 @@ document.addEventListener('DOMContentLoaded', () => {
   // 拉取管理员房间列表
   function fetchAdminRooms() {
     fetch('/api/admin/rooms', {
-      headers: { 'Authorization': adminToken }
+      headers: { 'Authorization': `Bearer ${adminToken}` }
     })
-    .then(res => res.json())
+    .then(res => {
+      if (res.status === 401) {
+        throw new Error('管理员未鉴权或凭证已失效');
+      }
+      return res.json();
+    })
     .then(data => {
       if (data.success && Array.isArray(data.rooms)) {
         adminRoomsData = data.rooms;
@@ -154,10 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
           renderAdminUsersList([]);
         }
       } else {
-        adminToken = '';
-        localStorage.removeItem('chat_admin_token');
-        showAdminLogin();
+        throw new Error(data.message || '获取房间失败');
       }
+    })
+    .catch(err => {
+      console.warn('管理员数据拉取受阻:', err.message);
+      if (adminToken) {
+        showToast('管理员身份已失效或密码已在别处修改，请重新验证！', 'warning');
+      }
+      adminToken = '';
+      localStorage.removeItem('chat_admin_token');
+      showAdminLogin();
     });
   }
 

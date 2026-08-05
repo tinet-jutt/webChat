@@ -377,7 +377,13 @@ document.addEventListener('DOMContentLoaded', () => {
           'Authorization': `Bearer ${adminToken}`
         }
       })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          showAdminLogin();
+          throw new Error('管理员登录失效，请重新登录！');
+        }
+        return res.json();
+      })
       .then(data => {
         btnCheckSystemUpdate.disabled = false;
         btnCheckSystemUpdate.textContent = '🔍 重新检查版本';
@@ -415,7 +421,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnCheckSystemUpdate.disabled = false;
         btnCheckSystemUpdate.textContent = '🔍 重新检查版本';
         console.error('检查版本异常:', err);
-        showToast('版本检查失败，请重试', 'error');
+        showToast(err.message || '版本检查失败，请重试', 'error');
+        if (updateStatusBox) {
+          updateStatusBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          updateStatusBox.style.border = '1px solid rgba(239, 68, 68, 0.4)';
+          updateStatusBox.style.color = '#fca5a5';
+          updateStatusBox.textContent = `❌ ${err.message || '连接服务器检查失败，请重新登录管理后台'}`;
+        }
       });
     });
   }

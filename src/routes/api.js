@@ -255,15 +255,42 @@ router.post('/admin/rooms', adminAuth, (req, res) => {
   });
 });
 
-// 清空历史
+// 清空历史 (同时联动物理删除磁盘存储的所有图片与大文件资源)
 router.post('/admin/rooms/:id/clear', adminAuth, (req, res) => {
   const roomId = req.params.id;
   const room = config.rooms.get(roomId);
   if (room) {
+    const history = room.getHistory() || [];
+    let deletedFilesCount = 0;
+
+    // 遍历历史消息，找出属于该房间的文件与图片磁盘资源并删除
+    history.forEach(msg => {
+      let targetPath = null;
+      if (msg.type === 'image' && msg.imageUrl) {
+        const filename = path.basename(msg.imageUrl);
+        targetPath = path.join(uploadsDir, filename);
+      } else if (msg.type === 'file' && msg.fileUrl) {
+        const filename = path.basename(msg.fileUrl);
+        targetPath = path.join(uploadsDir, filename);
+      }
+
+      if (targetPath && fs.existsSync(targetPath)) {
+        try {
+          fs.unlinkSync(targetPath);
+          deletedFilesCount++;
+        } catch (err) {
+          console.error(`删除物理文件失败 ${targetPath}:`, err);
+        }
+      }
+    });
+
     room.clearHistory();
     const io = req.app.get('io');
     io.to(roomId).emit('history_cleared', { message: `管理员已清空当前房间历史消息` });
-    return res.json({ success: true, message: '消息历史已清空' });
+    return res.json({
+      success: true,
+      message: `【${room.name}】历史消息已清空，并成功删除了 ${deletedFilesCount} 个物理磁盘文件资源！`
+    });
   }
   res.status(404).json({ success: false, message: '未找到对应房间' });
 });

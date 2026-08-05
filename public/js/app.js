@@ -526,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     msgInput.value = '';
   }
 
-  // 图片快捷上传
+  // 图片快捷上传 (包含内嵌 Loading 占位态)
   btnUploadTrigger.addEventListener('click', () => {
     if (availableRooms.length === 0) {
       showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
@@ -543,10 +543,13 @@ document.addEventListener('DOMContentLoaded', () => {
   imgInput.addEventListener('change', () => {
     if (imgInput.files && imgInput.files[0]) {
       const file = imgInput.files[0];
+      const draftId = 'draft-img-' + Date.now();
+
+      // 创建消息列表 Loading 占位
+      createLoadingMessage(draftId, '图片高清处理与传输中', file.name);
+
       const formData = new FormData();
       formData.append('image', file);
-
-      showToast('图片处理中，准备发送...', 'info');
 
       fetch('/api/upload', {
         method: 'POST',
@@ -554,6 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .then(res => res.json())
       .then(data => {
+        removeLoadingMessage(draftId);
         if (data.success) {
           socket.emit('send_message', { type: 'image', imageUrl: data.imageUrl });
           imgInput.value = '';
@@ -563,13 +567,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       })
       .catch(err => {
+        removeLoadingMessage(draftId);
         console.error('上传出错:', err);
         showToast('图片上传发生错误', 'error');
       });
     }
   });
 
-  // 6. 大文件切片上传核心逻辑 (Chunked Resumable Upload)
+  // 6. 大文件切片上传核心逻辑 (带有消息列表高质感 Loading 动画与进度联动)
   btnFileTrigger.addEventListener('click', () => {
     if (availableRooms.length === 0) {
       showToast('暂无可用房间，请联系管理员先创建房间', 'warning');
@@ -594,8 +599,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const CHUNK_SIZE = 2 * 1024 * 1024; // 2MB 每个切片
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const fileHash = `${Date.now()}-${encodeURIComponent(file.name)}-${file.size}`;
+    const draftId = 'draft-file-' + Date.now();
 
-    // 显示进度 UI
+    // 在消息区与浮动卡片同时开启精美 Loading
+    createLoadingMessage(draftId, '大文件切片传输中', `准备上传 (0/${totalChunks})`);
+
     progressFilename.textContent = file.name;
     progressPercentText.textContent = '0%';
     progressBarFill.style.width = '0%';
@@ -626,15 +634,20 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(data.message || `切片 ${i} 上传失败`);
         }
 
-        // 更新进度条
+        // 更新进度 UI
         const percent = Math.floor(((i + 1) / totalChunks) * 100);
         progressPercentText.textContent = `${percent}%`;
         progressBarFill.style.width = `${percent}%`;
-        progressStatusSub.textContent = `分片传输中 (${i + 1}/${totalChunks})...`;
+        const statusText = `切片传输 ${percent}% (${i + 1}/${totalChunks})`;
+        progressStatusSub.textContent = statusText;
+
+        updateLoadingMessage(draftId, statusText);
       }
 
       // 所有切片上传完成，发送合并请求
       progressStatusSub.textContent = '全量切片流式校验合并中...';
+      updateLoadingMessage(draftId, '全量切片流式校验合并中...');
+
       const mergeRes = await fetch('/api/upload/merge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -647,6 +660,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       const mergeData = await mergeRes.json();
+      removeLoadingMessage(draftId);
+
       if (mergeData.success) {
         uploadProgressCard.classList.remove('active');
         fileInput.value = '';
@@ -665,9 +680,55 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('分片上传错误:', err);
+      removeLoadingMessage(draftId);
       uploadProgressCard.classList.remove('active');
       fileInput.value = '';
       showToast(err.message || '文件切片传输失败', 'error');
+    }
+  }
+
+  // 创建 Loading 动态消息气泡
+  function createLoadingMessage(draftId, title, subInfo) {
+    const item = document.createElement('div');
+    item.classList.add('message-item', 'self');
+    item.setAttribute('id', draftId);
+
+    const firstLetter = currentUser && currentUser.username ? currentUser.username.charAt(0).toUpperCase() : '?';
+    const avatarBg = currentUser && currentUser.avatarColor ? currentUser.avatarColor : 'var(--primary)';
+
+    item.innerHTML = `
+      <div class="user-avatar" style="background: ${avatarBg}">${firstLetter}</div>
+      <div class="message-content">
+        <div class="message-bubble loading-bubble">
+          <div class="loading-spinner-box">
+            <div class="loading-spinner"></div>
+          </div>
+          <div class="loading-text-wrap">
+            <span class="loading-text-title">
+              ${escapeHtml(title)}
+              <span class="loading-dots"><span>.</span><span>.</span><span>.</span></span>
+            </span>
+            <span class="loading-sub-info" id="${draftId}-sub">${escapeHtml(subInfo)}</span>
+          </div>
+        </div>
+      </div>
+    `;
+
+    messagesContainer.appendChild(item);
+    scrollToBottom();
+  }
+
+  function updateLoadingMessage(draftId, subInfo) {
+    const subElem = document.getElementById(`${draftId}-sub`);
+    if (subElem) {
+      subElem.textContent = subInfo;
+    }
+  }
+
+  function removeLoadingMessage(draftId) {
+    const item = document.getElementById(draftId);
+    if (item) {
+      item.remove();
     }
   }
 
